@@ -1,0 +1,12 @@
+{
+  "name": "2d-minecraft",
+  "version": "1.0.0",
+  "description": "A 2D Minecraft clone",
+  "main": "generate_sprites.js",
+  "scripts": {
+    "generate-sprites": "node generate_sprites.js"
+  },
+  "dependencies": {
+    "canvas": "^2.11.2"
+  }
+} 
