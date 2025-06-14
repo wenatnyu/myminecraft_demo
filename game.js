@@ -8,6 +8,14 @@ const ATTACK_COOLDOWN = 500; // milliseconds
 const WAVE_COOLDOWN = 2000; // milliseconds
 const BULLET_SPEED = 10;
 
+// Block types with their properties
+const BLOCK_TYPES = {
+    dirt: { name: 'Dirt', color: '#8B4513' },
+    grass: { name: 'Grass', color: '#567D46' },
+    stone: { name: 'Stone', color: '#808080' },
+    wood: { name: 'Wood', color: '#8B4513' }
+};
+
 // Game state
 let gameState = {
     player: {
@@ -56,6 +64,56 @@ images.stone.src = 'assets/stone.png';
 images.wood.src = 'assets/wood.png';
 images.bullet.src = 'assets/bullet.png';
 images.wave.src = 'assets/wave.png';
+
+// Create block selection UI
+function createBlockSelectionUI() {
+    const blockSelect = document.createElement('div');
+    blockSelect.id = 'blockSelect';
+    blockSelect.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    `;
+    
+    const blockImage = document.createElement('img');
+    blockImage.id = 'selectedBlockImage';
+    blockImage.style.cssText = `
+        width: 32px;
+        height: 32px;
+        border: 2px solid white;
+    `;
+    
+    const blockName = document.createElement('span');
+    blockName.id = 'selectedBlockName';
+    blockName.style.cssText = `
+        font-size: 16px;
+        font-family: Arial, sans-serif;
+    `;
+    
+    blockSelect.appendChild(blockImage);
+    blockSelect.appendChild(blockName);
+    document.getElementById('gameContainer').appendChild(blockSelect);
+    
+    updateBlockSelectionUI();
+}
+
+// Update block selection UI
+function updateBlockSelectionUI() {
+    const blockImage = document.getElementById('selectedBlockImage');
+    const blockName = document.getElementById('selectedBlockName');
+    
+    if (blockImage && blockName) {
+        blockImage.src = images[gameState.player.selectedBlock].src;
+        blockName.textContent = BLOCK_TYPES[gameState.player.selectedBlock].name;
+    }
+}
 
 // Generate random terrain
 function generateRandomTerrain() {
@@ -125,6 +183,7 @@ function generateTree(x, y) {
 function selectCharacter(character) {
     gameState.player.character = character;
     document.getElementById('characterSelect').style.display = 'none';
+    createBlockSelectionUI();
 }
 
 // Attack functions
@@ -182,9 +241,10 @@ window.addEventListener('keydown', (e) => {
     }
     
     // Block selection
-    if (e.key >= '1' && e.key <= '5') {
+    if (e.key >= '1' && e.key <= '4') {
         const blocks = ['dirt', 'grass', 'stone', 'wood'];
         gameState.player.selectedBlock = blocks[parseInt(e.key) - 1];
+        updateBlockSelectionUI();
     }
     
     // Attacks
@@ -207,20 +267,26 @@ canvas.addEventListener('click', (e) => {
     const gridX = Math.floor(mouseX / BLOCK_SIZE) * BLOCK_SIZE;
     const gridY = Math.floor(mouseY / BLOCK_SIZE) * BLOCK_SIZE;
     
+    // Check if there's already a block at this position
+    const existingBlock = gameState.blocks.find(block => 
+        block.x === gridX && block.y === gridY
+    );
+    
     if (gameState.mode === 'creative') {
-        // Place block
-        gameState.blocks.push({
-            type: gameState.player.selectedBlock,
-            x: gridX,
-            y: gridY
-        });
+        if (!existingBlock) {
+            // Place block
+            gameState.blocks.push({
+                type: gameState.player.selectedBlock,
+                x: gridX,
+                y: gridY
+            });
+        }
     } else {
-        // Break block
-        const blockIndex = gameState.blocks.findIndex(block => 
-            block.x === gridX && block.y === gridY
-        );
-        if (blockIndex !== -1) {
-            gameState.blocks.splice(blockIndex, 1);
+        if (existingBlock) {
+            // Break block
+            gameState.blocks = gameState.blocks.filter(block => 
+                block !== existingBlock
+            );
         }
     }
 });
@@ -356,8 +422,7 @@ function gameLoop() {
     ctx.fillStyle = 'white';
     ctx.font = '20px Arial';
     ctx.fillText(`Mode: ${gameState.mode}`, 10, 30);
-    ctx.fillText(`Selected: ${gameState.player.selectedBlock}`, 10, 60);
-    ctx.fillText(`Health: ${gameState.player.health}`, 10, 90);
+    ctx.fillText(`Health: ${gameState.player.health}`, 10, 60);
     
     requestAnimationFrame(gameLoop);
 }
